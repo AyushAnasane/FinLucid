@@ -64,9 +64,6 @@ def edit_expense(request, expense_id):
     return render(request, 'core/edit_expense.html', {'expense': expense})
 
 
-def options(request):
-    return render(request, 'core/options.html')
-
 
 def portfolio(request):
     error = None
@@ -163,3 +160,6 @@ def refresh_prices(request):
             h.current_price = live_price
             h.save()
     return redirect('portfolio')
+
+def login_page(request):
+    return render(request, 'core/login.html')
