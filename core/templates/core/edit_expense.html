@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-red-50 p-10">
+  <div class="max-w-md mx-auto bg-white rounded-2xl p-6 shadow-sm">
+    <h2 class="text-lg font-bold mb-4">Edit Expense</h2>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="number" step="0.01" name="amount" value="{{ expense.amount }}"
+        class="w-full border rounded-lg px-4 py-2 mb-4">
+      <select name="category" class="w-full border rounded-lg px-4 py-2 mb-4">
+        <option value="food" {% if expense.category == 'food' %}selected{% endif %}>Food</option>
+        <option value="transport" {% if expense.category == 'transport' %}selected{% endif %}>Transport</option>
+        <option value="shopping" {% if expense.category == 'shopping' %}selected{% endif %}>Shopping</option>
+        <option value="bills" {% if expense.category == 'bills' %}selected{% endif %}>Bills</option>
+        <option value="entertainment" {% if expense.category == 'entertainment' %}selected{% endif %}>Entertainment</option>
+        <option value="other" {% if expense.category == 'other' %}selected{% endif %}>Other</option>
+      </select>
+      <input type="text" name="note" value="{{ expense.note }}"
+        class="w-full border rounded-lg px-4 py-2 mb-4">
+      <button type="submit" class="bg-red-400 text-white px-6 py-2 rounded-lg w-full">Save</button>
+    </form>
+  </div>
+</body>
+</html>

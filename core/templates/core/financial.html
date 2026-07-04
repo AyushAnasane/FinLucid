@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financial Tracker - Finlucid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-red-50" style="font-family: 'Inter', sans-serif;">
+
+  <nav class="sticky top-0 bg-red-50 z-50 w-full py-4 backdrop-blur-md">
+    <div class="px-10 flex space-x-6 justify-between items-center w-full">
+      <a href="/" class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">
+        FINLUCID
+      </a>
+      <div class="flex space-x-2 font-semibold text-slate-400">
+        <a href="/" class="px-4 py-2 text-sm hover:text-red-400">Dashboard</a>
+        <a href="/financial/" class="px-4 py-2 text-sm text-red-400">Financial Tracker</a>
+        <a href="/portfolio/" class="px-4 py-2 text-sm hover:text-red-400">Portfolio Tracker</a>
+        <a href="/options/" class="px-4 py-2 text-sm hover:text-red-400">Options Tools</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="px-10 py-10 max-w-5xl mx-auto">
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Financial Tracker</h1>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm mb-8">
+      <p class="text-gray-400 text-sm mb-1">Total Spent</p>
+      <p class="text-3xl font-bold text-gray-900">₹{{ total_spent }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm mb-8">
+    <div class="flex justify-between mb-2">
+        <p class="text-gray-400 text-sm">Monthly Budget</p>
+        <p class="text-gray-900 font-semibold text-sm">₹{{ total_spent }} / ₹{{ budget_amount }}</p>
+    </div>
+    <div class="w-full bg-gray-100 rounded-full h-3">
+        <div class="bg-red-400 h-3 rounded-full" style="width: {{ budget_used_pct }}%"></div>
+    </div>
+    <form method="POST" class="mt-4 flex gap-2">
+        {% csrf_token %}
+        <input type="number" name="budget_amount" placeholder="Set monthly budget"
+        class="border border-gray-300 rounded-lg px-3 py-1 text-sm flex-1">
+        <button type="submit" name="set_budget" value="1"
+        class="bg-gray-900 text-white text-sm px-4 py-1 rounded-lg">Set</button>
+    </form>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8">
+
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Add Expense</h2>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="mb-4">
+            <label class="text-sm text-gray-500 mb-1 block">Amount</label>
+            <input type="number" name="amount" step="0.01" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+          </div>
+          <div class="mb-4">
+            <label class="text-sm text-gray-500 mb-1 block">Category</label>
+            <select name="category" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+              <option value="food">Food</option>
+              <option value="transport">Transport</option>
+              <option value="shopping">Shopping</option>
+              <option value="bills">Bills</option>
+              <option value="entertainment">Entertainment</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="mb-6">
+            <label class="text-sm text-gray-500 mb-1 block">Note (optional)</label>
+            <input type="text" name="note"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+          </div>
+          <button type="submit"
+            class="bg-red-400 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl w-full transition-all duration-300">
+            Add Expense
+          </button>
+        </form>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">By Category</h2>
+        {% for cat in category_totals %}
+        <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
+          <span class="text-gray-600 capitalize">{{ cat.category }}</span>
+          <span class="font-semibold text-gray-900">₹{{ cat.total }}</span>
+        </div>
+        {% empty %}
+        <p class="text-gray-400 text-sm">No expenses yet. Add one to see breakdown.</p>
+        {% endfor %}
+      </div>
+
+    </div>
+
+    <div class="mb-4">
+    <select onchange="window.location.href='?category=' + this.value" 
+        class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
+        <option value="">All Categories</option>
+        <option value="food" {% if category_filter == 'food' %}selected{% endif %}>Food</option>
+        <option value="transport" {% if category_filter == 'transport' %}selected{% endif %}>Transport</option>
+        <option value="shopping" {% if category_filter == 'shopping' %}selected{% endif %}>Shopping</option>
+        <option value="bills" {% if category_filter == 'bills' %}selected{% endif %}>Bills</option>
+        <option value="entertainment" {% if category_filter == 'entertainment' %}selected{% endif %}>Entertainment</option>
+        <option value="other" {% if category_filter == 'other' %}selected{% endif %}>Other</option>
+    </select>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm mt-8">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h2>
+      <table class="w-full text-sm">
+        <thead class="text-gray-400 border-b border-gray-200">
+          <tr>
+            <th class="text-left pb-2">Date</th>
+            <th class="text-left pb-2">Category</th>
+            <th class="text-left pb-2">Note</th>
+            <th class="text-right pb-2">Amount</th>
+            <th class="pb-2 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in expenses %}
+          <tr class="border-b border-gray-100 last:border-0">
+            <td class="py-3 text-gray-600">{{ e.date }}</td>
+            <td class="py-3 text-gray-600 capitalize">{{ e.category }}</td>
+            <td class="py-3 text-gray-600">{{ e.note|default:"-" }}</td>
+            <td class="py-3 text-right font-semibold text-gray-900">₹{{ e.amount }}</td>
+            <td class="py-3 text-right">
+                <a href="{% url 'delete_expense' e.id %}" class="text-red-400 hover:text-red-600 text-xs font-semibold mr-3">Delete</a>
+                <a href="{% url 'edit_expense' e.id %}" class="text-gray-400 hover:text-gray-600 text-xs font-semibold">Edit</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="py-4 text-gray-400 text-center">No transactions yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+</body>
+</html>

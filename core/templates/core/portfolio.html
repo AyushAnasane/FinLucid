@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio Tracker - Finlucid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-red-50" style="font-family: 'Inter', sans-serif;">
+
+  <nav class="sticky top-0 bg-red-50 z-50 w-full py-4 backdrop-blur-md">
+    <div class="px-10 flex space-x-6 justify-between items-center w-full">
+      <a href="/" class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">
+        FINLUCID
+      </a>
+      <div class="flex space-x-2 font-semibold text-slate-400">
+        <a href="/" class="px-4 py-2 text-sm hover:text-red-400">Dashboard</a>
+        <a href="/financial/" class="px-4 py-2 text-sm hover:text-red-400">Financial Tracker</a>
+        <a href="/portfolio/" class="px-4 py-2 text-sm text-red-400">Portfolio Tracker</a>
+        <a href="/options/" class="px-4 py-2 text-sm hover:text-red-400">Options Tools</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="px-10 py-10 max-w-6xl mx-auto">
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Portfolio Tracker</h1>
+
+    <div class="grid md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <p class="text-gray-400 text-sm mb-1">Invested</p>
+        <p class="text-2xl font-bold text-gray-900">₹{{ total_invested }}</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <p class="text-gray-400 text-sm mb-1">Current Value</p>
+        <p class="text-2xl font-bold text-gray-900">₹{{ total_current }}</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <p class="text-gray-400 text-sm mb-1">Total P&L</p>
+        <p class="text-2xl font-bold {% if total_pnl >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+          ₹{{ total_pnl }} ({{ total_pnl_pct }}%)
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm mb-8">
+      <h2 class="text-lg font-bold text-gray-900 mb-4">Allocation Breakdown</h2>
+      {% for cat in category_breakdown %}
+      <div class="mb-3">
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-gray-600">{{ cat.label }}</span>
+          <span class="text-gray-900 font-semibold">₹{{ cat.value|floatformat:2 }} ({{ cat.pct }}%)</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-2">
+          <div class="bg-red-400 h-2 rounded-full" style="width: {{ cat.pct }}%"></div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-gray-400 text-sm">No holdings yet. Add one to see allocation.</p>
+      {% endfor %}
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+
+      <div class="bg-white rounded-2xl p-6 shadow-sm md:col-span-1">
+        <h2 class="text-lg font-bold text-gray-900 mb-4">Add Holding</h2>
+
+        {% if error %}
+        <p class="text-red-500 text-sm mb-4">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" id="holding-form">
+          {% csrf_token %}
+
+          <div class="mb-4">
+            <label class="text-sm text-gray-500 mb-1 block">Asset Type</label>
+            <select name="asset_type" id="asset_type" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+              <option value="stock">Stock</option>
+              <option value="etf">ETF</option>
+              <option value="mf">Mutual Fund</option>
+            </select>
+          </div>
+
+          <div class="mb-4" id="exchange-field">
+            <label class="text-sm text-gray-500 mb-1 block">Exchange</label>
+            <select name="exchange" id="exchange"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+              <option value="NSE">NSE</option>
+              <option value="BSE">BSE</option>
+            </select>
+          </div>
+
+          <div class="mb-4" id="stock-etf-field">
+            <label class="text-sm text-gray-500 mb-1 block">Symbol</label>
+            <input type="text" name="identifier" id="stock_identifier" list="ticker-list-nse" placeholder="e.g. TCS"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+            <datalist id="ticker-list-nse">
+              {% for t in valid_tickers_nse %}
+              <option value="{{ t }}">
+              {% endfor %}
+            </datalist>
+            <datalist id="ticker-list-bse">
+              {% for t in valid_tickers_bse %}
+              <option value="{{ t }}">
+              {% endfor %}
+            </datalist>
+          </div>
+
+          <div class="mb-4 hidden" id="mf-field">
+            <label class="text-sm text-gray-500 mb-1 block">Mutual Fund</label>
+            <input type="text" id="mf_search" placeholder="Type fund name..."
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 mb-2 focus:outline-none focus:border-red-400">
+            <div id="mf_results" class="max-h-40 overflow-y-auto border border-gray-100 rounded-lg text-xs hidden"></div>
+            <input type="text" name="identifier" id="mf_identifier" readonly placeholder="Selected scheme code"
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 mt-2 bg-gray-50 text-gray-500">
+          </div>
+
+          <div class="mb-4">
+            <label class="text-sm text-gray-500 mb-1 block" id="qty-label">Quantity</label>
+            <input type="number" name="quantity" step="0.0001" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+          </div>
+          <div class="mb-4">
+            <label class="text-sm text-gray-500 mb-1 block" id="buy-label">Buy Price</label>
+            <input type="number" name="buy_price" step="0.0001" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+          </div>
+          <div class="mb-6">
+            <label class="text-sm text-gray-500 mb-1 block" id="cur-label">Current Price</label>
+            <input type="number" name="current_price" step="0.0001" required
+              class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-red-400">
+          </div>
+
+          <button type="submit"
+            class="bg-red-400 hover:bg-red-500 text-white font-semibold px-6 py-3 rounded-xl w-full transition-all duration-300">
+            Add Holding
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold text-gray-900">Holdings</h2>
+          <a href="{% url 'refresh_prices' %}"
+             class="bg-gray-900 text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-gray-700">
+            Refresh Prices
+          </a>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="text-gray-400 border-b border-gray-200">
+            <tr>
+              <th class="text-left pb-2">Name</th>
+              <th class="text-left pb-2">Type</th>
+              <th class="text-right pb-2">Qty</th>
+              <th class="text-right pb-2">Buy</th>
+              <th class="text-right pb-2">LTP/NAV</th>
+              <th class="text-right pb-2">P&L</th>
+              <th class="text-right pb-2">Updated</th>
+              <th class="pb-2 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in holdings %}
+            <tr class="border-b border-gray-100 last:border-0">
+              <td class="py-3 font-semibold text-gray-900">
+                {{ h.identifier }}{% if h.exchange %} <span class="text-gray-400 text-xs">({{ h.exchange }})</span>{% endif %}
+                <div class="text-gray-400 font-normal text-xs">{{ h.name|truncatechars:30 }}</div>
+              </td>
+              <td class="py-3 text-gray-500 uppercase text-xs">{{ h.get_asset_type_display }}</td>
+              <td class="py-3 text-right text-gray-600">{{ h.quantity }}</td>
+              <td class="py-3 text-right text-gray-600">₹{{ h.buy_price }}</td>
+              <td class="py-3 text-right text-gray-600">₹{{ h.current_price }}</td>
+              <td class="py-3 text-right font-semibold {% if h.pnl >= 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                ₹{{ h.pnl }} ({{ h.pnl_pct }}%)
+              </td>
+              <td class="py-3 text-right text-gray-400 text-xs">{{ h.last_updated|timesince }} ago</td>
+              <td class="py-3 text-right">
+                <a href="{% url 'edit_holding' h.id %}" class="text-gray-400 hover:text-gray-600 text-xs font-semibold mr-2">Edit</a>
+                <a href="{% url 'delete_holding' h.id %}" class="text-red-400 hover:text-red-600 text-xs font-semibold">Delete</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="py-4 text-gray-400 text-center">No holdings added yet</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </section>
+
+  <script>
+    const assetType = document.getElementById('asset_type');
+    const exchangeField = document.getElementById('exchange-field');
+    const exchange = document.getElementById('exchange');
+    const stockField = document.getElementById('stock-etf-field');
+    const mfField = document.getElementById('mf-field');
+    const stockIdentifier = document.getElementById('stock_identifier');
+    const mfIdentifier = document.getElementById('mf_identifier');
+    const mfSearch = document.getElementById('mf_search');
+    const mfResults = document.getElementById('mf_results');
+    const qtyLabel = document.getElementById('qty-label');
+    const buyLabel = document.getElementById('buy-label');
+    const curLabel = document.getElementById('cur-label');
+
+    function toggleFields() {
+      if (assetType.value === 'mf') {
+        stockField.classList.add('hidden');
+        exchangeField.classList.add('hidden');
+        mfField.classList.remove('hidden');
+        stockIdentifier.removeAttribute('name');
+        mfIdentifier.setAttribute('name', 'identifier');
+        qtyLabel.textContent = 'Units';
+        buyLabel.textContent = 'Buy NAV';
+        curLabel.textContent = 'Current NAV';
+      } else {
+        mfField.classList.add('hidden');
+        exchangeField.classList.remove('hidden');
+        stockField.classList.remove('hidden');
+        mfIdentifier.removeAttribute('name');
+        stockIdentifier.setAttribute('name', 'identifier');
+        qtyLabel.textContent = 'Quantity';
+        buyLabel.textContent = 'Buy Price';
+        curLabel.textContent = 'Current Price';
+      }
+      updateDatalist();
+    }
+
+    function updateDatalist() {
+      const listId = exchange.value === 'NSE' ? 'ticker-list-nse' : 'ticker-list-bse';
+      stockIdentifier.setAttribute('list', listId);
+    }
+
+    assetType.addEventListener('change', toggleFields);
+    exchange.addEventListener('change', updateDatalist);
+    toggleFields();
+
+    let debounceTimer;
+    mfSearch.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      const query = mfSearch.value.trim();
+      if (query.length < 3) {
+        mfResults.classList.add('hidden');
+        return;
+      }
+      debounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          mfResults.innerHTML = '';
+          if (data.length === 0) {
+            mfResults.classList.add('hidden');
+            return;
+          }
+          data.slice(0, 15).forEach(scheme => {
+            const div = document.createElement('div');
+            div.textContent = scheme.schemeName;
+            div.className = 'px-3 py-2 hover:bg-red-50 cursor-pointer border-b border-gray-50 last:border-0';
+            div.addEventListener('click', () => {
+              mfSearch.value = scheme.schemeName;
+              mfIdentifier.value = scheme.schemeCode;
+              mfResults.classList.add('hidden');
+            });
+            mfResults.appendChild(div);
+          });
+          mfResults.classList.remove('hidden');
+        } catch (e) {
+          mfResults.classList.add('hidden');
+        }
+      }, 350);
+    });
+  </script>
+
+</body>
+</html>
