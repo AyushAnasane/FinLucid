@@ -6,4 +6,4 @@ dj-database-url
 psycopg2-binary
 gunicorn
 python-dotenv
-PyJWT
+PyJWT==2.10.1
