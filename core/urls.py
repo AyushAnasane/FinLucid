@@ -11,6 +11,6 @@ urlpatterns = [
     path('portfolio/delete/<int:holding_id>/', views.delete_holding, name='delete_holding'),
     path('portfolio/refresh/', views.refresh_prices, name='refresh_prices'),
     path('portfolio/edit/<int:holding_id>/', views.edit_holding, name='edit_holding'),
-    path('login/', views.login_page, name='login'),
+    path('login/', views.login_page, name='login_page'),
 ]
 
